@@ -10,11 +10,12 @@ export default function IdeaGenerator() {
 
   const handleGenerate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!topic.trim()) return;
+    const trimmedTopic = topic.trim();
+    if (!trimmedTopic) return;
 
     setIsGenerating(true);
     try {
-      const result = await generateCreativeIdeas(topic);
+      const result = await generateCreativeIdeas(trimmedTopic);
       setIdeas(result || null);
     } catch (error) {
       console.error(error);
@@ -42,6 +43,7 @@ export default function IdeaGenerator() {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="Topic identification..."
+          required
           className="w-full h-14 bg-surface rounded-sm px-6 text-sm border border-border focus:outline-none focus:border-accent/50 transition-all placeholder:text-text-secondary/30"
         />
         <button

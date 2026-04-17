@@ -24,15 +24,15 @@ export default function ChatInterface() {
 
   const handleSend = async (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) return;
 
-    const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', text: trimmedInput }]);
     setIsLoading(true);
 
     try {
-      const response = await chatWithLumina(messages, userMessage);
+      const response = await chatWithLumina(messages, trimmedInput);
       setMessages(prev => [...prev, { role: 'model', text: response || 'Operational error: Vector retrieval failed.' }]);
     } catch (error) {
       console.error(error);
@@ -95,6 +95,7 @@ export default function ChatInterface() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Input vector stream..."
+            required
             className="flex-1 px-6 bg-transparent focus:outline-none text-text-primary text-sm placeholder:text-text-secondary/20"
           />
           <button
