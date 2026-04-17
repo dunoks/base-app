@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Loader2, Sparkles, MessageSquare, Plus, PlusCircle, ArrowLeft, User, Bot } from 'lucide-react';
+import { Send, Loader2, Sparkles, MessageSquare, Plus, PlusCircle, ArrowLeft, User, Bot, FileUp, FileText } from 'lucide-react';
 import { chatWithLumina } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -20,7 +20,9 @@ export default function ChatInterface() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Draft handling
   useEffect(() => {
@@ -67,20 +69,19 @@ export default function ChatInterface() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, uploadingFile]);
 
-  const handleSend = async (e: FormEvent) => {
-    e.preventDefault();
-    const trimmedInput = input.trim();
+  const handleSend = async (e?: FormEvent, textOverride?: string) => {
+    e?.preventDefault();
+    const trimmedInput = (textOverride || input).trim();
     if (!trimmedInput || isLoading || !user) return;
 
-    setInput('');
+    if (!textOverride) setInput('');
     setIsLoading(true);
 
     let currentThreadId = activeThreadId;
 
     try {
-      // 1. Create thread if none active
       if (!currentThreadId) {
         currentThreadId = await createConversation(user.uid, trimmedInput) || null;
         setActiveThreadId(currentThreadId);
@@ -88,19 +89,41 @@ export default function ChatInterface() {
 
       if (!currentThreadId) throw new Error('Failed to identify thread');
 
-      // 2. Save user message to Firestore
       await addMessageToConversation(currentThreadId, 'user', trimmedInput);
 
-      // 3. Get AI response
       const response = await chatWithLumina(messages.map(m => ({ role: m.role, text: m.text })), trimmedInput);
       
-      // 4. Save AI response to Firestore
       await addMessageToConversation(currentThreadId, 'model', response || 'Operational error.');
     } catch (error) {
       console.error(error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingFile(true);
+    const reader = new FileReader();
+    
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        const prompt = `I'm uploading a file named "${file.name}". Please analyze the following content and provide insights, summaries, or structural analysis as required:\n\n---\n${content}\n---`;
+        await handleSend(undefined, prompt);
+      }
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    reader.onerror = () => {
+      console.error("File reading error");
+      setUploadingFile(false);
+    };
+
+    reader.readAsText(file);
   };
 
   const startNewChat = () => {
@@ -110,6 +133,13 @@ export default function ChatInterface() {
 
   return (
     <div className="h-full flex relative overflow-hidden">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        className="hidden" 
+        accept=".txt,.md,.json,.ts,.tsx,.js,.jsx,.css"
+      />
       {/* Thread Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -206,7 +236,7 @@ export default function ChatInterface() {
                 </div>
               </motion.div>
             ))}
-            {isLoading && (
+            {(isLoading || uploadingFile) && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -218,7 +248,10 @@ export default function ChatInterface() {
                 <div className="flex flex-col items-start max-w-[80%]">
                   <div className="text-[10px] uppercase tracking-[2px] text-accent mb-1.5 px-0.5">Lumina Core</div>
                   <div className="bg-surface border border-border px-6 py-4 rounded-sm">
-                    <Loader2 size={12} className="animate-spin text-accent" />
+                    <div className="flex items-center gap-2">
+                       <Loader2 size={12} className="animate-spin text-accent" />
+                       <span className="text-[10px] text-text-secondary uppercase tracking-widest">{uploadingFile ? 'Parsing Data...' : 'Analyzing Vector Stream...'}</span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -228,9 +261,17 @@ export default function ChatInterface() {
 
         <div className="absolute bottom-8 left-0 right-0 px-4 md:px-12 pointer-events-none">
           <form 
-            onSubmit={handleSend}
+            onSubmit={(e) => handleSend(e)}
             className="max-w-4xl mx-auto flex gap-0 bg-surface border border-border rounded-sm shadow-2xl pointer-events-auto overflow-hidden h-14"
           >
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-14 h-full flex items-center justify-center text-text-secondary hover:text-accent border-r border-border transition-colors hover:bg-bg-dark/50"
+              title="Upload analysis vector"
+            >
+              <FileUp size={18} />
+            </button>
             <input
               type="text"
               value={input}
@@ -241,7 +282,7 @@ export default function ChatInterface() {
             />
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || uploadingFile}
               className="w-20 bg-accent text-bg-dark flex items-center justify-center hover:bg-accent/90 transition-all disabled:opacity-20"
             >
               <Send size={16} />
@@ -252,5 +293,6 @@ export default function ChatInterface() {
     </div>
   );
 }
+
 
 
