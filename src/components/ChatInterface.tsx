@@ -167,21 +167,42 @@ export default function ChatInterface() {
             {messages.map((msg, i) => (
               <motion.div
                 key={msg.id || i}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`text-[10px] uppercase tracking-widest ${msg.role === 'user' ? 'text-text-secondary' : 'text-accent'}`}>
-                    {msg.role === 'user' ? 'Operator' : 'Lumina Core'}
-                  </div>
-                </div>
-                <div className={`max-w-[85%] px-6 py-4 rounded-sm border ${
-                  msg.role === 'model' 
-                    ? 'bg-surface border-border text-text-primary' 
-                    : 'bg-transparent border-accent/30 text-text-primary'
+                {/* Avatar */}
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 mt-1 ${
+                  msg.role === 'user' 
+                    ? 'border-accent/30 text-accent/70 bg-accent/5' 
+                    : 'border-border text-text-secondary bg-surface'
                 }`}>
-                  <p className="leading-relaxed whitespace-pre-wrap text-[13px]">{msg.text}</p>
+                  {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
+                </div>
+
+                {/* Message Content */}
+                <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                  <div className="flex items-center gap-2 mb-1.5 px-0.5">
+                    <div className={`text-[10px] uppercase tracking-[2px] font-medium ${
+                      msg.role === 'user' ? 'text-text-secondary' : 'text-accent'
+                    }`}>
+                      {msg.role === 'user' ? 'Operator' : 'Lumina Core'}
+                    </div>
+                  </div>
+                  <div className={`px-6 py-4 rounded-sm border transition-colors ${
+                    msg.role === 'model' 
+                      ? 'bg-surface border-border text-text-primary' 
+                      : 'bg-bg-dark border-accent/20 text-text-primary group-hover:border-accent/40'
+                  }`}>
+                    <p className="leading-relaxed whitespace-pre-wrap text-[13px] font-sans selection:bg-accent/30">
+                      {msg.text}
+                    </p>
+                  </div>
+                  {msg.timestamp && (
+                    <div className="mt-2 text-[9px] uppercase tracking-tighter text-text-secondary/40 font-mono">
+                      {new Date(msg.timestamp?.toDate?.() || msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -189,11 +210,16 @@ export default function ChatInterface() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-start"
+                className="flex gap-4 items-start"
               >
-                <div className="text-[10px] uppercase tracking-widest text-accent mb-2">Lumina Core</div>
-                <div className="bg-surface border border-border px-6 py-4 rounded-sm">
-                  <Loader2 size={14} className="animate-spin text-accent" />
+                <div className="w-8 h-8 rounded-full border border-border bg-surface flex items-center justify-center shrink-0 mt-1">
+                  <Sparkles size={14} className="text-accent animate-pulse" />
+                </div>
+                <div className="flex flex-col items-start max-w-[80%]">
+                  <div className="text-[10px] uppercase tracking-[2px] text-accent mb-1.5 px-0.5">Lumina Core</div>
+                  <div className="bg-surface border border-border px-6 py-4 rounded-sm">
+                    <Loader2 size={12} className="animate-spin text-accent" />
+                  </div>
                 </div>
               </motion.div>
             )}
