@@ -1,0 +1,105 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: conversations
+// Document ID: auto-generated
+// Fields:
+//   - userId: string (required) - The owner's UID
+//   - title: string (required, max 100 chars) - Chat summary
+//   - createdAt: timestamp (required) - Creation time
+//   - lastModifiedAt: timestamp (required) - Last message time
+//
+// Collection: conversations/{conversationId}/messages
+// Document ID: auto-generated
+// Fields:
+//   - role: string (required, enum ['user', 'model']) - Message sender
+//   - text: string (required, max 5000 chars) - Message content
+//   - timestamp: timestamp (required) - Message time
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner(docData) {
+      return isAuthenticated() && request.auth.uid == docData.userId;
+    }
+
+    function isValidString(val, min, max) {
+      return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    function isTimestamp(val) {
+      return val is timestamp;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidConversation(data) {
+      return data.keys().hasAll(['userId', 'title', 'createdAt', 'lastModifiedAt']) &&
+             data.keys().hasOnly(['userId', 'title', 'createdAt', 'lastModifiedAt']) &&
+             data.userId == request.auth.uid &&
+             isValidString(data.title, 1, 100) &&
+             isTimestamp(data.createdAt) &&
+             isTimestamp(data.lastModifiedAt);
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['role', 'text', 'timestamp']) &&
+             data.keys().hasOnly(['role', 'text', 'timestamp']) &&
+             data.role in ['user', 'model'] &&
+             isValidString(data.text, 1, 5000) &&
+             isTimestamp(data.timestamp);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /conversations/{conversationId} {
+      // Users can only read their own conversations
+      allow read: if isDocOwner(resource.data);
+      
+      // Users can create conversations for themselves
+      allow create: if isAuthenticated() && isValidConversation(request.resource.data);
+      
+      // Owners can update metadata (like title or lastModifiedAt)
+      allow update: if isDocOwner(resource.data) && isValidConversation(request.resource.data);
+      
+      // Owners can delete their conversations
+      allow delete: if isDocOwner(resource.data);
+
+      match /messages/{messageId} {
+        // Nested access control: must own the parent conversation
+        allow read: if isDocOwner(get(/databases/$(database)/documents/conversations/$(conversationId)).data);
+        
+        allow create: if isDocOwner(get(/databases/$(database)/documents/conversations/$(conversationId)).data) && 
+                      isValidMessage(request.resource.data);
+
+        // Messages are usually immutable in this app
+        allow update, delete: if false;
+      }
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

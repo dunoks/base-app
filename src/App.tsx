@@ -8,12 +8,22 @@ import Layout from './components/Layout';
 import IdeaGenerator from './components/IdeaGenerator';
 import ChatInterface from './components/ChatInterface';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, LogIn } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export default function App() {
+function AppContent() {
+  const { user, loading, signIn } = useAuth();
   const [activeView, setActiveView] = useState('landing');
   
-  if (activeView === 'landing') {
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-bg-dark flex items-center justify-center">
+        <div className="w-10 h-10 border border-accent/20 border-t-accent animate-spin rounded-full" />
+      </div>
+    );
+  }
+
+  if (activeView === 'landing' || !user) {
     return (
       <div className="h-screen w-full bg-bg-dark flex items-center justify-center p-8 overflow-hidden">
         <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
@@ -38,22 +48,32 @@ export default function App() {
               A high-precision creative engine designed for the modern operative. Brainstorm, analyze, and refine with Lumina Core.
             </p>
 
-            <button
-              onClick={() => setActiveView('brainstorm')}
-              className="group h-14 px-10 border border-accent text-accent rounded-sm flex items-center gap-6 text-xs uppercase tracking-[2px] hover:bg-accent hover:text-bg-dark transition-all duration-500"
-            >
-              Initialize System
-              <ArrowRight className="group-hover:translate-x-2 transition-transform duration-500" size={16} />
-            </button>
+            {!user ? (
+              <button
+                onClick={signIn}
+                className="group h-14 px-10 border border-accent text-accent rounded-sm flex items-center gap-6 text-xs uppercase tracking-[2px] hover:bg-accent hover:text-bg-dark transition-all duration-500"
+              >
+                Sign In with Google
+                <LogIn className="group-hover:translate-x-2 transition-transform duration-500" size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveView('brainstorm')}
+                className="group h-14 px-10 border border-accent text-accent rounded-sm flex items-center gap-6 text-xs uppercase tracking-[2px] hover:bg-accent hover:text-bg-dark transition-all duration-500"
+              >
+                Initialize System
+                <ArrowRight className="group-hover:translate-x-2 transition-transform duration-500" size={16} />
+              </button>
+            )}
           </motion.div>
 
+          {/* ... right side remains same ... */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
             className="aspect-[4/5] relative hidden lg:block"
           >
-            {/* Thematic frame */}
             <div className="absolute inset-0 border border-border rounded-sm -m-4 z-0" />
             <div className="relative z-10 w-full h-full border border-border rounded-sm overflow-hidden bg-surface shadow-2xl">
                <div className="w-full h-full bg-surface flex items-center justify-center overflow-hidden relative">
@@ -94,4 +114,13 @@ export default function App() {
     </Layout>
   );
 }
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
 

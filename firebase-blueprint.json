@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A chat session between the user and Lumina AI.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who owns this conversation." },
+        "title": { "type": "string", "description": "A brief summary or title of the chat session." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the conversation was initiated." },
+        "lastModifiedAt": { "type": "string", "format": "date-time", "description": "When the last message was sent." }
+      },
+      "required": ["userId", "title", "createdAt", "lastModifiedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "An individual message within a conversation.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "model"], "description": "Who sent the message." },
+        "text": { "type": "string", "description": "The content of the message." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the message was sent." }
+      },
+      "required": ["role", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Metadata for chat sessions."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "The messages belonging to a specific conversation."
+    }
+  }
+}
