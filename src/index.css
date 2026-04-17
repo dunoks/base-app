@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-bg-dark: #0A0A0A;
+  --color-surface: #141414;
+  --color-border: #222222;
+  --color-accent: #BFA181;
+  --color-text-primary: #F2F2F2;
+  --color-text-secondary: #8C8C8C;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-text-primary font-sans antialiased;
+  }
+}
+
+.glass {
+  @apply bg-surface/50 backdrop-blur-md border border-border;
+}
+
+.tight-heading {
+  @apply tracking-tighter leading-[0.88] font-serif font-normal;
+}
+
+.serif-card {
+  @apply bg-surface border border-border rounded-[4px] p-6 shadow-none;
+}
+
+.accent-pill {
+  @apply text-[10px] px-2 py-0.5 border border-accent text-accent rounded-full uppercase tracking-wider;
+}
