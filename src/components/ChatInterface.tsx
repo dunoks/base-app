@@ -22,6 +22,26 @@ export default function ChatInterface() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Draft handling
+  useEffect(() => {
+    const draftKey = `lumina_draft_${activeThreadId || 'new'}`;
+    const savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft) {
+      setInput(savedDraft);
+    } else {
+      setInput('');
+    }
+  }, [activeThreadId]);
+
+  useEffect(() => {
+    const draftKey = `lumina_draft_${activeThreadId || 'new'}`;
+    if (input) {
+      localStorage.setItem(draftKey, input);
+    } else {
+      localStorage.removeItem(draftKey);
+    }
+  }, [input, activeThreadId]);
+
   // Subscribe to threads
   useEffect(() => {
     if (!user) return;
